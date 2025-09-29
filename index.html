@@ -4,9 +4,35 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>EK Clothing Hub — Catalog</title>
+
+  <!-- fonts & styles (you already have style.css) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Merriweather:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* minimal inline styles to ensure layout if style.css missing */
+    :root{--pad:20px;--gap:16px}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;margin:var(--pad);background:#fafafa;color:#111}
+    .site-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:56px;height:56px;object-fit:contain}
+    .brand-text h1{margin:0;font-size:1.1rem}
+    .subtitle{margin:0;font-size:0.85rem;color:#666}
+    .cta{background:#25D366;color:#fff;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:600}
+    .container{max-width:1100px;margin:0 auto}
+    .intro{margin-bottom:12px;color:#333}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--gap)}
+    .card{background:#fff;border:1px solid #eee;border-radius:8px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,0.03)}
+    .card-img img{width:100%;height:200px;object-fit:cover;display:block}
+    .card-body{padding:10px}
+    .card-body h3{margin:0 0 6px;font-size:1rem}
+    .sku,.sizes,.price{margin:4px 0;color:#444;font-size:0.95rem}
+    .btn-order{display:inline-block;margin-top:8px;padding:8px 10px;background:#009688;color:#fff;border-radius:6px;text-decoration:none}
+    .note{color:#777;padding:18px}
+    .how-to{margin-top:22px}
+    footer.site-footer{margin-top:26px;color:#666;text-align:center;font-size:0.9rem}
+    @media (max-width:520px){ .card-img img{height:150px} }
+  </style>
 </head>
 <body>
   <header class="site-header">
@@ -17,8 +43,8 @@
         <p class="subtitle">Wholesale & Reseller Clothing — Prepaid Orders</p>
       </div>
     </div>
-    <!-- edit WA_NUMBER below (only once) -->
-    <a class="cta" id="whatsapp-btn" href="#" target="_blank" rel="noopener" aria-label="Order on WhatsApp">Order on WhatsApp</a>
+    <!-- EDIT THIS: set your WhatsApp number (international format, no +) -->
+    <a class="cta" id="whatsapp-btn" href="#" target="_blank" rel="noopener">Order on WhatsApp</a>
   </header>
 
   <main class="container">
@@ -46,26 +72,26 @@
 
 <script>
 /*
-  EDIT THESE VALUES:
-  - WA_NUMBER: your WhatsApp number in international format without plus, e.g. 919812345678
-  - PLACEHOLDER_IMG: path to a placeholder image if product image missing
+  CONFIG - edit these:
+  - WA_NUMBER: your WhatsApp number in international format without + (example '919812345678')
+  - PLACEHOLDER_IMG: relative path to a fallback image if a product image is missing
 */
-const WA_NUMBER = '91XXXXXXXXXX';          // <-- replace with your number
-const PLACEHOLDER_IMG = 'images/placeholder.png';
+const WA_NUMBER = "91XXXXXXXXXX";   // <-- replace with your number
+const PLACEHOLDER_IMG = "images/placeholder.png";
 
-document.getElementById('year').textContent = new Date().getFullYear();
-document.getElementById('whatsapp-btn').href = `https://wa.me/${WA_NUMBER}`;
+document.getElementById("year").textContent = new Date().getFullYear();
+document.getElementById("whatsapp-btn").href = `https://wa.me/${WA_NUMBER}`;
 
-// load products.json (if present). Falls back to sample array if file missing or invalid.
+/* load products.json (must be an array) */
 async function loadProductsJSON() {
   try {
-    const res = await fetch('/products.json', { cache: 'no-store' });
-    if (!res.ok) throw new Error('products.json not found');
+    const res = await fetch("products.json", { cache: "no-store" });
+    if (!res.ok) throw new Error("products.json not found (status " + res.status + ")");
     const data = await res.json();
-    if (!Array.isArray(data)) throw new Error('products.json should be an array of items');
+    if (!Array.isArray(data)) throw new Error("products.json must be a JSON array of product objects");
     return data;
   } catch (err) {
-    console.warn('Using fallback sample products —', err.message);
+    console.warn("Using fallback sample products —", err.message);
     return [
       { "sku": "EK-001", "name": "Cotton Kurti - Classic", "price": 350, "img": "images/kurti1.jpg", "sizes": "S/M/L", "moq": 1 },
       { "sku": "EK-002", "name": "Rayon Dress - Floral",   "price": 420, "img": "images/kurti2.jpg", "sizes": "Free Size", "moq": 1 },
@@ -74,44 +100,46 @@ async function loadProductsJSON() {
   }
 }
 
-function esc(text){ return String(text === undefined || text === null ? '' : text)
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(text) {
+  return String(text ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
 
 function makeWhatsAppLink(product) {
-  // prefilled message — customer will add quantity after clicking
-  const name = product.name || product.sku || 'product';
-  const sku = product.sku ? `SKU: ${product.sku}` : '';
-  const base = `Hi EK Hub, I want to order ${sku} ${name}. Qty: `;
+  const skuText = product.sku ? `SKU: ${product.sku}` : "";
+  const base = `Hi EK Hub, I want to order ${skuText} ${product.name || ""}. Qty: `;
   return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(base)}`;
 }
 
 function createCard(p) {
-  const card = document.createElement('article');
-  card.className = 'card';
-  card.setAttribute('role','article');
+  const card = document.createElement("article");
+  card.className = "card";
 
-  const imgWrap = document.createElement('div');
-  imgWrap.className = 'card-img';
-  const img = document.createElement('img');
-  img.alt = esc(p.name || p.sku || 'product image');
+  const imgWrap = document.createElement("div");
+  imgWrap.className = "card-img";
+  const img = document.createElement("img");
+  img.alt = esc(p.name || p.sku || "product image");
   img.src = p.img || PLACEHOLDER_IMG;
-  // fallback if relative path fails -> use placeholder
   img.onerror = () => { if (img.src !== PLACEHOLDER_IMG) img.src = PLACEHOLDER_IMG; };
   imgWrap.appendChild(img);
 
-  const bd = document.createElement('div');
-  bd.className = 'card-body';
-  bd.innerHTML = `<h3>${esc(p.name || '-')}</h3>
-                  <p class="sku">${esc(p.sku || '-')}</p>
-                  <p class="price">₹${esc(p.price == null ? '-' : p.price)} <span class="moq">MOQ: ${esc(p.moq == null ? '-' : p.moq)}</span></p>
-                  <p class="sizes">Sizes: ${esc(p.sizes || '-')}</p>`;
+  const bd = document.createElement("div");
+  bd.className = "card-body";
+  bd.innerHTML = `
+    <h3>${esc(p.name || "-")}</h3>
+    <p class="sku">${esc(p.sku || "-")}</p>
+    <p class="price">₹${esc(p.price ?? "-")} <span class="moq">MOQ: ${esc(p.moq ?? "-")}</span></p>
+    <p class="sizes">Sizes: ${esc(p.sizes || "-")}</p>
+  `;
 
-  const btn = document.createElement('a');
+  const btn = document.createElement("a");
   btn.href = makeWhatsAppLink(p);
-  btn.target = '_blank';
-  btn.rel = 'noopener';
-  btn.className = 'btn-order';
-  btn.textContent = 'Order on WhatsApp';
+  btn.target = "_blank";
+  btn.rel = "noopener";
+  btn.className = "btn-order";
+  btn.textContent = "Order on WhatsApp";
 
   bd.appendChild(btn);
   card.appendChild(imgWrap);
@@ -121,19 +149,24 @@ function createCard(p) {
 
 async function render() {
   const products = await loadProductsJSON();
-  const wrap = document.getElementById('catalog');
-  wrap.innerHTML = '';
+  const wrap = document.getElementById("catalog");
+  wrap.innerHTML = "";
 
   if (!products.length) {
-    const note = document.createElement('p');
-    note.className = 'note';
-    note.textContent = 'No products found. Add product objects to products.json and upload images to the images/ folder.';
+    const note = document.createElement("p");
+    note.className = "note";
+    note.textContent = "No products found. Add product objects to products.json and upload images to the images/ folder.";
     wrap.appendChild(note);
     return;
   }
 
-  // render all cards (keeps order in the JSON file)
-  products.forEach(p => wrap.appendChild(createCard(p)));
+  products.forEach(p => {
+    try {
+      wrap.appendChild(createCard(p));
+    } catch(e) {
+      console.error("Failed to render product", p, e);
+    }
+  });
 }
 
 render();
