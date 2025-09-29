@@ -17,7 +17,8 @@
         <p class="subtitle">Wholesale & Reseller Clothing — Prepaid Orders</p>
       </div>
     </div>
-    <a class="cta" id="whatsapp-btn" href="https://wa.me/91XXXXXXXXXX" target="_blank" rel="noopener">Order on WhatsApp</a>
+    <!-- edit WA_NUMBER below (only once) -->
+    <a class="cta" id="whatsapp-btn" href="#" target="_blank" rel="noopener" aria-label="Order on WhatsApp">Order on WhatsApp</a>
   </header>
 
   <main class="container">
@@ -25,7 +26,7 @@
       <p>Browse our selected catalog below. Click any product to open WhatsApp with a pre-filled message to order.</p>
     </section>
 
-    <section id="catalog" class="grid">
+    <section id="catalog" class="grid" aria-live="polite">
       <!-- Product cards injected by script -->
     </section>
 
@@ -44,61 +45,98 @@
   </footer>
 
 <script>
+/*
+  EDIT THESE VALUES:
+  - WA_NUMBER: your WhatsApp number in international format without plus, e.g. 919812345678
+  - PLACEHOLDER_IMG: path to a placeholder image if product image missing
+*/
+const WA_NUMBER = '91XXXXXXXXXX';          // <-- replace with your number
+const PLACEHOLDER_IMG = 'images/placeholder.png';
+
 document.getElementById('year').textContent = new Date().getFullYear();
+document.getElementById('whatsapp-btn').href = `https://wa.me/${WA_NUMBER}`;
 
-const products = [];
-// If products.json exists it will be fetched; otherwise, this will fill sample items.
-fetch('products.json').then(r => {
-  if (r.ok) return r.json();
-  throw new Error('no products.json');
-}).then(data => {
-  loadProducts(data);
-}).catch(_ => {
-  // fallback sample products
-  const sample = [
-    { "sku": "EK-001", "name": "Cotton Kurti - Classic", "price": 350, "img": "images/kurti1.jpg", "sizes": "S/M/L", "moq": 1 },
-    { "sku": "EK-002", "name": "Rayon Dress - Floral", "price": 420, "img": "images/kurti2.jpg", "sizes": "Free Size", "moq": 1 },
-    { "sku": "EK-003", "name": "Silk Blend Top", "price": 625, "img": "images/kurti3.jpg", "sizes": "S/M/L/XL", "moq": 1 }
-  ];
-  loadProducts(sample);
-});
+// load products.json (if present). Falls back to sample array if file missing or invalid.
+async function loadProductsJSON() {
+  try {
+    const res = await fetch('/products.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('products.json not found');
+    const data = await res.json();
+    if (!Array.isArray(data)) throw new Error('products.json should be an array of items');
+    return data;
+  } catch (err) {
+    console.warn('Using fallback sample products —', err.message);
+    return [
+      { "sku": "EK-001", "name": "Cotton Kurti - Classic", "price": 350, "img": "images/kurti1.jpg", "sizes": "S/M/L", "moq": 1 },
+      { "sku": "EK-002", "name": "Rayon Dress - Floral",   "price": 420, "img": "images/kurti2.jpg", "sizes": "Free Size", "moq": 1 },
+      { "sku": "EK-003", "name": "Silk Blend Top",         "price": 625, "img": "images/kurti3.jpg", "sizes": "S/M/L/XL", "moq": 1 }
+    ];
+  }
+}
 
-function esc(text){ return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(text){ return String(text === undefined || text === null ? '' : text)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-function loadProducts(list){
+function makeWhatsAppLink(product) {
+  // prefilled message — customer will add quantity after clicking
+  const name = product.name || product.sku || 'product';
+  const sku = product.sku ? `SKU: ${product.sku}` : '';
+  const base = `Hi EK Hub, I want to order ${sku} ${name}. Qty: `;
+  return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(base)}`;
+}
+
+function createCard(p) {
+  const card = document.createElement('article');
+  card.className = 'card';
+  card.setAttribute('role','article');
+
+  const imgWrap = document.createElement('div');
+  imgWrap.className = 'card-img';
+  const img = document.createElement('img');
+  img.alt = esc(p.name || p.sku || 'product image');
+  img.src = p.img || PLACEHOLDER_IMG;
+  // fallback if relative path fails -> use placeholder
+  img.onerror = () => { if (img.src !== PLACEHOLDER_IMG) img.src = PLACEHOLDER_IMG; };
+  imgWrap.appendChild(img);
+
+  const bd = document.createElement('div');
+  bd.className = 'card-body';
+  bd.innerHTML = `<h3>${esc(p.name || '-')}</h3>
+                  <p class="sku">${esc(p.sku || '-')}</p>
+                  <p class="price">₹${esc(p.price == null ? '-' : p.price)} <span class="moq">MOQ: ${esc(p.moq == null ? '-' : p.moq)}</span></p>
+                  <p class="sizes">Sizes: ${esc(p.sizes || '-')}</p>`;
+
+  const btn = document.createElement('a');
+  btn.href = makeWhatsAppLink(p);
+  btn.target = '_blank';
+  btn.rel = 'noopener';
+  btn.className = 'btn-order';
+  btn.textContent = 'Order on WhatsApp';
+
+  bd.appendChild(btn);
+  card.appendChild(imgWrap);
+  card.appendChild(bd);
+  return card;
+}
+
+async function render() {
+  const products = await loadProductsJSON();
   const wrap = document.getElementById('catalog');
   wrap.innerHTML = '';
-  list.forEach(p => {
-    const card = document.createElement('article');
-    card.className = 'card';
-    const img = document.createElement('div');
-    img.className = 'card-img';
-    const imageElem = document.createElement('img');
-    imageElem.alt = esc(p.name);
-    imageElem.src = p.img || 'images/placeholder.png';
-    img.appendChild(imageElem);
 
-    const bd = document.createElement('div');
-    bd.className = 'card-body';
-    bd.innerHTML = `<h3>${esc(p.name)}</h3>
-                    <p class="sku">${esc(p.sku)}</p>
-                    <p class="price">₹${esc(p.price)} <span class="moq">MOQ: ${esc(p.moq)}</span></p>
-                    <p class="sizes">Sizes: ${esc(p.sizes || '-')}</p>`;
+  if (!products.length) {
+    const note = document.createElement('p');
+    note.className = 'note';
+    note.textContent = 'No products found. Add product objects to products.json and upload images to the images/ folder.';
+    wrap.appendChild(note);
+    return;
+  }
 
-    const btn = document.createElement('a');
-    const text = encodeURIComponent(`Hi EK Hub, I want to order ${p.sku} (${p.name}) Qty: `);
-    btn.href = `https://wa.me/91XXXXXXXXXX?text=${text}`;
-    btn.target = '_blank';
-    btn.rel = 'noopener';
-    btn.className = 'btn-order';
-    btn.textContent = 'Order on WhatsApp';
-    bd.appendChild(btn);
-
-    card.appendChild(img);
-    card.appendChild(bd);
-    wrap.appendChild(card);
-  });
+  // render all cards (keeps order in the JSON file)
+  products.forEach(p => wrap.appendChild(createCard(p)));
 }
+
+render();
 </script>
 </body>
 </html>
