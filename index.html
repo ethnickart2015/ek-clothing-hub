@@ -5,12 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>EK Clothing Hub — Catalog</title>
 
-  <!-- fonts & styles (you already have style.css) -->
+  <!-- fonts & styles -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Merriweather:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <style>
-    /* minimal inline styles to ensure layout if style.css missing */
     :root{--pad:20px;--gap:16px}
     body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;margin:var(--pad);background:#fafafa;color:#111}
     .site-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
@@ -23,7 +22,7 @@
     .intro{margin-bottom:12px;color:#333}
     .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--gap)}
     .card{background:#fff;border:1px solid #eee;border-radius:8px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,0.03)}
-    .card-img img{width:100%;height:200px;object-fit:cover;display:block}
+    .card-img img{width:100%;height:200px;object-fit:cover;display:block;cursor:pointer}
     .card-body{padding:10px}
     .card-body h3{margin:0 0 6px;font-size:1rem}
     .sku,.sizes,.price{margin:4px 0;color:#444;font-size:0.95rem}
@@ -32,6 +31,24 @@
     .how-to{margin-top:22px}
     footer.site-footer{margin-top:26px;color:#666;text-align:center;font-size:0.9rem}
     @media (max-width:520px){ .card-img img{height:150px} }
+
+    /* lightbox */
+    #lightbox {
+      display:none;
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.85);
+      justify-content:center;
+      align-items:center;
+      z-index:9999;
+    }
+    #lightbox img {
+      max-width:90%;
+      max-height:90%;
+      border:4px solid #fff;
+      border-radius:8px;
+      box-shadow:0 0 20px rgba(0,0,0,0.5);
+    }
   </style>
 </head>
 <body>
@@ -43,13 +60,13 @@
         <p class="subtitle">Wholesale & Reseller Clothing — Prepaid Orders</p>
       </div>
     </div>
-    <!-- EDIT THIS: set your WhatsApp number (international format, no +) -->
+    <!-- EDIT THIS: set your WhatsApp number -->
     <a class="cta" id="whatsapp-btn" href="#" target="_blank" rel="noopener">Order on WhatsApp</a>
   </header>
 
   <main class="container">
     <section class="intro">
-      <p>Browse our selected catalog below. Click any product to open WhatsApp with a pre-filled message to order.</p>
+      <p>Browse our selected catalog below. Click any product image to view full size. Click the order button to contact us on WhatsApp.</p>
     </section>
 
     <section id="catalog" class="grid" aria-live="polite">
@@ -70,25 +87,26 @@
     <p>&copy; <span id="year"></span> EK Clothing Hub • Fast in Hyderabad & Kolkata • Pan India Shipping</p>
   </footer>
 
+  <!-- lightbox modal -->
+  <div id="lightbox">
+    <img id="lightbox-img" src="" alt="Full view">
+  </div>
+
 <script>
-/*
-  CONFIG - edit these:
-  - WA_NUMBER: your WhatsApp number in international format without + (example '919812345678')
-  - PLACEHOLDER_IMG: relative path to a fallback image if a product image is missing
-*/
+/* CONFIG */
 const WA_NUMBER = "91XXXXXXXXXX";   // <-- replace with your number
 const PLACEHOLDER_IMG = "images/placeholder.png";
 
 document.getElementById("year").textContent = new Date().getFullYear();
 document.getElementById("whatsapp-btn").href = `https://wa.me/${WA_NUMBER}`;
 
-/* load products.json (must be an array) */
+/* load products.json */
 async function loadProductsJSON() {
   try {
     const res = await fetch("products.json", { cache: "no-store" });
-    if (!res.ok) throw new Error("products.json not found (status " + res.status + ")");
+    if (!res.ok) throw new Error("products.json not found");
     const data = await res.json();
-    if (!Array.isArray(data)) throw new Error("products.json must be a JSON array of product objects");
+    if (!Array.isArray(data)) throw new Error("products.json must be an array");
     return data;
   } catch (err) {
     console.warn("Using fallback sample products —", err.message);
@@ -119,10 +137,20 @@ function createCard(p) {
 
   const imgWrap = document.createElement("div");
   imgWrap.className = "card-img";
+
   const img = document.createElement("img");
   img.alt = esc(p.name || p.sku || "product image");
   img.src = p.img || PLACEHOLDER_IMG;
   img.onerror = () => { if (img.src !== PLACEHOLDER_IMG) img.src = PLACEHOLDER_IMG; };
+
+  // Lightbox open on click
+  img.onclick = () => {
+    const lightbox = document.getElementById("lightbox");
+    const big = document.getElementById("lightbox-img");
+    big.src = p.img || PLACEHOLDER_IMG;
+    lightbox.style.display = "flex";
+  };
+
   imgWrap.appendChild(img);
 
   const bd = document.createElement("div");
@@ -155,21 +183,20 @@ async function render() {
   if (!products.length) {
     const note = document.createElement("p");
     note.className = "note";
-    note.textContent = "No products found. Add product objects to products.json and upload images to the images/ folder.";
+    note.textContent = "No products found. Add product objects to products.json and upload images.";
     wrap.appendChild(note);
     return;
   }
 
-  products.forEach(p => {
-    try {
-      wrap.appendChild(createCard(p));
-    } catch(e) {
-      console.error("Failed to render product", p, e);
-    }
-  });
+  products.forEach(p => wrap.appendChild(createCard(p)));
 }
 
 render();
+
+/* close lightbox on click anywhere */
+document.getElementById("lightbox").onclick = () => {
+  document.getElementById("lightbox").style.display = "none";
+};
 </script>
 </body>
 </html>
