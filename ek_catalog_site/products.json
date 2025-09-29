@@ -1,0 +1,34 @@
+[
+  {
+    "sku": "EK-001",
+    "name": "Cotton Kurti \u2014 Classic",
+    "price": 350,
+    "img": "images/kurti1.jpg",
+    "sizes": "S/M/L",
+    "moq": 1
+  },
+  {
+    "sku": "EK-002",
+    "name": "Rayon Dress \u2014 Floral",
+    "price": 420,
+    "img": "images/kurti2.jpg",
+    "sizes": "Free Size",
+    "moq": 1
+  },
+  {
+    "sku": "EK-003",
+    "name": "Silk Blend Top",
+    "price": 625,
+    "img": "images/kurti3.jpg",
+    "sizes": "S/M/L/XL",
+    "moq": 1
+  },
+  {
+    "sku": "EK-004",
+    "name": "Chiffon Dupatta",
+    "price": 180,
+    "img": "images/kurti4.jpg",
+    "sizes": "One Size",
+    "moq": 5
+  }
+]
